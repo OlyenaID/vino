@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vino — AI Wine Concierge</title>
+<title>Vino â€” AI Wine Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -71,7 +71,7 @@
   .screen { display: none; flex: 1; }
   .screen.active { display: flex; }
 
-  /* ── ONBOARDING ── */
+  /* â”€â”€ ONBOARDING â”€â”€ */
   #screen-onboarding {
     flex-direction: column;
     align-items: center;
@@ -240,7 +240,7 @@
   .btn-primary:hover { background: var(--wine-deep); }
   .btn-primary svg { width: 16px; height: 16px; }
 
-  /* ── CHAT ── */
+  /* â”€â”€ CHAT â”€â”€ */
   #screen-chat { flex-direction: row; height: calc(100vh - 65px); }
 
   .sidebar {
@@ -496,7 +496,7 @@
   </div>
 </header>
 
-<!-- ══════════ ONBOARDING ══════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â• ONBOARDING â•â•â•â•â•â•â•â•â•â• -->
 <div class="screen active" id="screen-onboarding">
   <div class="onboard-wrap">
 
@@ -508,35 +508,35 @@
     <div class="onboard-step active" id="step-1">
       <div class="step-label">Step 1 of 3</div>
       <h1 class="onboard-title">What kind of wine <em>speaks</em> to you?</h1>
-      <p class="onboard-sub">Pick everything that feels right — your concierge will learn from here.</p>
+      <p class="onboard-sub">Pick everything that feels right â€” your concierge will learn from here.</p>
       <div class="taste-grid">
         <div class="taste-card" data-val="bold-reds" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">🍷</span>
+          <span class="taste-card-icon">ðŸ·</span>
           <span class="taste-card-name">Bold reds</span>
-          <span class="taste-card-desc">Shiraz, Cabernet, Malbec — rich and full-bodied</span>
+          <span class="taste-card-desc">Shiraz, Cabernet, Malbec â€” rich and full-bodied</span>
         </div>
         <div class="taste-card" data-val="elegant-reds" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">🌹</span>
+          <span class="taste-card-icon">ðŸŒ¹</span>
           <span class="taste-card-name">Elegant reds</span>
-          <span class="taste-card-desc">Pinot Noir, Sangiovese — silky and refined</span>
+          <span class="taste-card-desc">Pinot Noir, Sangiovese â€” silky and refined</span>
         </div>
         <div class="taste-card" data-val="crisp-whites" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">🥂</span>
+          <span class="taste-card-icon">ðŸ¥‚</span>
           <span class="taste-card-name">Crisp whites</span>
-          <span class="taste-card-desc">Sauvignon Blanc, Pinot Grigio — fresh and zesty</span>
+          <span class="taste-card-desc">Sauvignon Blanc, Pinot Grigio â€” fresh and zesty</span>
         </div>
         <div class="taste-card" data-val="rich-whites" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">🍋</span>
+          <span class="taste-card-icon">ðŸ‹</span>
           <span class="taste-card-name">Rich whites</span>
-          <span class="taste-card-desc">Chardonnay, Viognier — creamy and textured</span>
+          <span class="taste-card-desc">Chardonnay, Viognier â€” creamy and textured</span>
         </div>
         <div class="taste-card" data-val="bubbles" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">✨</span>
+          <span class="taste-card-icon">âœ¨</span>
           <span class="taste-card-name">Bubbles</span>
-          <span class="taste-card-desc">Champagne, Prosecco, Sparkling — celebratory</span>
+          <span class="taste-card-desc">Champagne, Prosecco, Sparkling â€” celebratory</span>
         </div>
         <div class="taste-card" data-val="natural" onclick="toggleTaste(this)">
-          <span class="taste-card-icon">🌿</span>
+          <span class="taste-card-icon">ðŸŒ¿</span>
           <span class="taste-card-name">Natural & orange</span>
           <span class="taste-card-desc">Low-intervention, funky, skin-contact wines</span>
         </div>
@@ -551,7 +551,7 @@
     <div class="onboard-step" id="step-2">
       <div class="step-label">Step 2 of 3</div>
       <h1 class="onboard-title">What's your <em>usual</em> spend per bottle?</h1>
-      <p class="onboard-sub">We'll use this as your default — you can always override it in chat.</p>
+      <p class="onboard-sub">We'll use this as your default â€” you can always override it in chat.</p>
       <div class="budget-row">
         <div class="budget-val" id="budget-display">$35</div>
         <input type="range" id="budget-slider" min="10" max="200" step="5" value="35"
@@ -596,7 +596,7 @@
   </div>
 </div>
 
-<!-- ══════════ CHAT ══════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â• CHAT â•â•â•â•â•â•â•â•â•â• -->
 <div class="screen" id="screen-chat">
   <div class="sidebar">
     <div class="sidebar-section">
@@ -613,10 +613,10 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Quick prompts</div>
       <div class="quick-prompts">
-        <button class="quick-btn" onclick="quickPrompt('Something for a dinner party this weekend')">🍽 Dinner party wine</button>
-        <button class="quick-btn" onclick="quickPrompt('A great bottle as a gift under $60')">🎁 Gift bottle</button>
-        <button class="quick-btn" onclick="quickPrompt('Best value red under $25 right now')">💸 Value pick</button>
-        <button class="quick-btn" onclick="quickPrompt('Something celebratory — we\'re popping a cork tonight')">🥂 Celebratory</button>
+        <button class="quick-btn" onclick="quickPrompt('Something for a dinner party this weekend')">ðŸ½ Dinner party wine</button>
+        <button class="quick-btn" onclick="quickPrompt('A great bottle as a gift under $60')">ðŸŽ Gift bottle</button>
+        <button class="quick-btn" onclick="quickPrompt('Best value red under $25 right now')">ðŸ’¸ Value pick</button>
+        <button class="quick-btn" onclick="quickPrompt('Something celebratory â€” we\'re popping a cork tonight')">ðŸ¥‚ Celebratory</button>
       </div>
     </div>
   </div>
@@ -625,13 +625,13 @@
     <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-area">
       <div class="chat-input-row">
-        <textarea id="chat-input" placeholder="Ask for a recommendation, pair with food, set a mood…" rows="1"
+        <textarea id="chat-input" placeholder="Ask for a recommendation, pair with food, set a moodâ€¦" rows="1"
           onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 16 16"><path d="M2 14L14 8 2 2v4.5l8 1.5-8 1.5z"/></svg>
         </button>
       </div>
-      <div class="input-hint">Powered by Claude · searching <span id="input-hint-shop">Dan Murphy's</span> live</div>
+      <div class="input-hint">Powered by Claude Â· searching <span id="input-hint-shop">Dan Murphy's</span> live</div>
     </div>
   </div>
 </div>
@@ -737,8 +737,8 @@ function addWelcomeMessage() {
     ? `I can see you love ${tastes.length > 1 ? tastes.slice(0,-1).join(', ') + ' and ' + tastes[tastes.length-1] : tastes[0]}`
     : 'Tell me what you love and I\'ll find the perfect bottle';
 
-  const html = `<p>${tasteStr} — and you're browsing <strong>${state.shopName}</strong> with a budget around <strong>$${state.budget}</strong>.</p>
-    <p style="margin-top:10px">Tell me what's on tonight — a dish you're cooking, a mood, an occasion, or just ask me to surprise you.</p>`;
+  const html = `<p>${tasteStr} â€” and you're browsing <strong>${state.shopName}</strong> with a budget around <strong>$${state.budget}</strong>.</p>
+    <p style="margin-top:10px">Tell me what's on tonight â€” a dish you're cooking, a mood, an occasion, or just ask me to surprise you.</p>`;
 
   appendMessage('ai', html);
 }
@@ -759,17 +759,17 @@ Preferred shop: ${state.shopName} (${state.shopUrl})
 
 Your job: when a user asks for a wine recommendation, suggest 2-3 specific wines commonly stocked at ${state.shopName} that match their request and profile.
 
-Always respond with a JSON object — no markdown, no code fences, just raw JSON:
+Always respond with a JSON object â€” no markdown, no code fences, just raw JSON:
 {
   "text": "warm 1-2 sentence intro or conversational reply",
   "wines": [
     {
       "name": "Producer Name Wine Name Vintage",
-      "meta": "Varietal · Region",
+      "meta": "Varietal Â· Region",
       "note": "One sentence on why this suits them personally",
       "price": 35,
       "url": "${state.shopUrl}/search?q=wine+name",
-      "icon": "🍷",
+      "icon": "ðŸ·",
       "color": "#F5EAE8"
     }
   ]
@@ -855,13 +855,13 @@ function appendMessage(role, html, cards) {
 
 function buildWineCards(wines) {
   return '<div class="wine-cards">' + wines.map(w => {
-    const meta = [w.varietal, w.region, w.style].filter(Boolean).join(' · ');
+    const meta = [w.varietal, w.region, w.style].filter(Boolean).join(' Â· ');
     const priceDisplay = w.price ? '$' + w.price : (w.priceRange || '');
     const href = w.url && w.url !== '#' ? escHtml(w.url) : null;
     const open = href ? '<a class="wine-card" href="' + href + '" target="_blank" rel="noopener">' : '<div class="wine-card">';
     const close = href ? '</a>' : '</div>';
     return open +
-      '<div class="wine-card-swatch" style="background:' + escHtml(w.color || '#F5EAE8') + '">' + (w.icon || '🍷') + '</div>' +
+      '<div class="wine-card-swatch" style="background:' + escHtml(w.color || '#F5EAE8') + '">' + (w.icon || 'ðŸ·') + '</div>' +
       '<div class="wine-card-body">' +
         '<div class="wine-card-name">' + escHtml(w.name) + '</div>' +
         (meta ? '<div class="wine-card-meta">' + escHtml(meta) + '</div>' : '') +
@@ -925,3 +925,4 @@ function escHtml(str) {
 </script>
 </body>
 </html>
+
