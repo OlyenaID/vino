@@ -13,11 +13,9 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured on server' });
 
   try {
-    // Step 1: Extract search terms from the user's latest message
     const userMessage = messages[messages.length - 1]?.content || '';
     const searchTerms = await extractSearchTerms(userMessage, apiKey);
 
-    // Step 2: Search the shop
     let products = [];
     let searchNote = '';
 
@@ -26,22 +24,20 @@ export default async function handler(req, res) {
       const isBWS = shopUrl && shopUrl.includes('bws.com.au');
 
       if (isDanMurphys || isBWS) {
-        const result = await searchEndeavourGroup(shopUrl, shopName, searchTerms);
+        const result = await searchEndeavourGroup(shopUrl, searchTerms);
         products = result.products;
         searchNote = result.note;
       } else {
-        const result = await searchGeneric(shopUrl, shopName, searchTerms);
+        const result = await searchGeneric(shopUrl, searchTerms);
         products = result.products;
         searchNote = result.note;
       }
     }
 
-    // Step 3: Build enriched system prompt with real products
     const enrichedSystem = products.length > 0
-      ? `${system}\n\nLIVE SEARCH RESULTS from ${shopName} for "${searchTerms}":\n${JSON.stringify(products, null, 2)}\n\nREQUIRED: Only recommend wines from this live search results list above. Use the exact name, price and URL provided. Do not invent wines.`
-      : `${system}\n\nNote: Could not fetch live results from ${shopName} (${searchNote}). Recommend wines you know are commonly stocked there, and construct product URLs as: ${shopUrl}/search?q=WINE+NAME`;
+      ? `${system}\n\nLIVE SEARCH RESULTS from ${shopName} for "${searchTerms}":\n${JSON.stringify(products, null, 2)}\n\nREQUIRED: Only recommend wines from this live search results list. Use the exact name, price and URL provided. Do not invent wines.`
+      : `${system}\n\nNote: Could not fetch live results from ${shopName} (${searchNote}). Recommend wines commonly stocked there and use URL: ${shopUrl}/search?q=WINE+NAME`;
 
-    // Step 4: Call Claude with enriched context
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -59,7 +55,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'Anthropic API error' });
-
     return res.status(200).json(data);
 
   } catch (err) {
@@ -69,42 +64,33 @@ export default async function handler(req, res) {
 
 async function extractSearchTerms(message, apiKey) {
   const lowerMsg = message.toLowerCase();
-  const searchSignals = ['wine', 'red', 'white', 'rose', 'sparkling', 'shiraz', 'pinot',
-    'cab', 'chardonnay', 'recommend', 'suggest', 'bottle', 'something', 'looking',
-    'dinner', 'gift', 'occasion', 'lamb', 'chicken', 'pasta', 'steak', 'fish',
-    'budget', 'under', 'cheap', 'value', 'special', 'celebrate'];
-  if (!searchSignals.some(s => lowerMsg.includes(s))) return null;
+  const signals = ['wine','red','white','rose','sparkling','shiraz','pinot','cab',
+    'chardonnay','recommend','suggest','bottle','something','looking','dinner','gift',
+    'occasion','lamb','chicken','pasta','steak','fish','budget','under','cheap',
+    'value','special','celebrate'];
+  if (!signals.some(s => lowerMsg.includes(s))) return null;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 50,
-        system: 'Extract 1-3 wine search keywords from the user message. Return ONLY the search term, nothing else. Examples: "shiraz", "pinot noir", "sparkling wine". If no specific wine is mentioned, return the most relevant general term like "red wine" or "white wine".',
+        system: 'Extract 1-3 wine search keywords from the user message. Return ONLY the search term, nothing else. Examples: "shiraz", "pinot noir", "sparkling wine". If no specific wine type is mentioned, return the most relevant general term like "red wine" or "white wine".',
         messages: [{ role: 'user', content: message }]
       })
     });
-    const data = await response.json();
-    return data.content?.[0]?.text?.trim() || 'wine';
-  } catch {
-    return 'wine';
-  }
+    const d = await r.json();
+    return d.content?.[0]?.text?.trim() || 'wine';
+  } catch { return 'wine'; }
 }
 
-async function searchEndeavourGroup(shopUrl, shopName, searchTerms) {
+async function searchEndeavourGroup(shopUrl, searchTerms) {
   const isDanMurphys = shopUrl.includes('danmurphys');
   const apiBase = isDanMurphys
     ? 'https://api.danmurphys.com.au/apis/ui/Search/products'
     : 'https://api.bws.com.au/apis/ui/Search/products';
-  const productUrlBase = isDanMurphys
-    ? 'https://www.danmurphys.com.au/product/DM_'
-    : 'https://bws.com.au/product/BWS_';
 
   try {
     const response = await fetch(apiBase, {
@@ -126,14 +112,31 @@ async function searchEndeavourGroup(shopUrl, shopName, searchTerms) {
       })
     });
 
-    if (!response.ok) throw new Error(`API returned ${response.status}`);
+    if (!response.ok) throw new Error('API returned ' + response.status);
     const data = await response.json();
     const suggestions = data?.Products?.Suggestions || [];
 
     const products = suggestions.slice(0, 8).map(p => {
-      const details = Object.fromEntries(
-        (p.AdditionalDetails || []).map(d => [d.Name, d.Value])
-      );
+      const details = Object.fromEntries((p.AdditionalDetails || []).map(d => [d.Name, d.Value]));
+
+      // Build direct product URL from dm_stockcode (e.g. "DM_144469")
+      const dmCode = details.dm_stockcode || '';
+      const rawCode = p.Stockcode || p.ParentStockcode || '';
+      let url;
+      if (dmCode) {
+        url = isDanMurphys
+          ? 'https://www.danmurphys.com.au/product/' + dmCode
+          : 'https://bws.com.au/product/' + dmCode;
+      } else if (rawCode) {
+        url = isDanMurphys
+          ? 'https://www.danmurphys.com.au/product/DM_' + rawCode
+          : 'https://bws.com.au/product/BWS_' + rawCode;
+      } else {
+        url = isDanMurphys
+          ? 'https://www.danmurphys.com.au/search?q=' + encodeURIComponent(p.Title || '')
+          : 'https://bws.com.au/search?q=' + encodeURIComponent(p.Title || '');
+      }
+
       return {
         name: p.Title || details.webproductname || 'Unknown',
         brand: p.Brand || '',
@@ -146,24 +149,24 @@ async function searchEndeavourGroup(shopUrl, shopName, searchTerms) {
         description: (details.webdescriptionshort || '').substring(0, 150),
         rating: details.webaverageproductrating || '',
         vintage: details.webvintagecurrent || '',
-        url: `${productUrlBase}${p.Stockcode || p.ParentStockcode}`
+        url
       };
     });
 
-    return { products, note: `Found ${products.length} results` };
+    return { products, note: 'Found ' + products.length + ' results' };
   } catch (err) {
-    return { products: [], note: `Endeavour API error: ${err.message}` };
+    return { products: [], note: 'Endeavour API error: ' + err.message };
   }
 }
 
-async function searchGeneric(shopUrl, shopName, searchTerms) {
+async function searchGeneric(shopUrl, searchTerms) {
   try {
     const base = shopUrl.replace(/\/$/, '');
     const encoded = encodeURIComponent(searchTerms);
     const isShopify = shopUrl.includes('blackheartsandsparrows') || shopUrl.includes('sometimesalways');
     const searchUrl = isShopify
-      ? `${base}/search/suggest.json?q=${encoded}&resources[type]=product&resources[limit]=8`
-      : `${base}/search?q=${encoded}&type=product`;
+      ? base + '/search/suggest.json?q=' + encoded + '&resources[type]=product&resources[limit]=8'
+      : base + '/search?q=' + encoded + '&type=product';
 
     const response = await fetch(searchUrl, {
       headers: {
@@ -174,7 +177,7 @@ async function searchGeneric(shopUrl, shopName, searchTerms) {
       signal: AbortSignal.timeout(8000)
     });
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
 
     if (isShopify) {
       const data = await response.json();
@@ -182,14 +185,14 @@ async function searchGeneric(shopUrl, shopName, searchTerms) {
       const products = items.slice(0, 8).map(p => ({
         name: p.title,
         price: p.price ? parseInt(p.price) / 100 : 0,
-        url: `${base}${p.url}`,
+        url: base + p.url,
         description: p.body || ''
       }));
-      return { products, note: `Found ${products.length} results` };
+      return { products, note: 'Found ' + products.length + ' results' };
     }
 
-    return { products: [], note: 'HTML fetch — Claude using general knowledge' };
+    return { products: [], note: 'HTML fetch — using general knowledge' };
   } catch (err) {
-    return { products: [], note: `Fetch error: ${err.message}` };
+    return { products: [], note: 'Fetch error: ' + err.message };
   }
 }
