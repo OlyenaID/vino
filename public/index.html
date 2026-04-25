@@ -788,7 +788,9 @@ async function callProxy(userMessage) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       system: buildSystemPrompt(),
-      messages: state.conversationHistory
+      messages: state.conversationHistory,
+      shopUrl: state.shopUrl,
+      shopName: state.shopName
     })
   });
 
