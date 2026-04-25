@@ -854,16 +854,22 @@ function appendMessage(role, html, cards) {
 }
 
 function buildWineCards(wines) {
-  return `<div class="wine-cards">${wines.map(w => `
-    <a class="wine-card" href="${escHtml(w.url || '#')}" target="_blank" rel="noopener">
-      <div class="wine-card-swatch" style="background:${escHtml(w.color || '#F5EAE8')}">${w.icon || '🍷'}</div>
-      <div class="wine-card-body">
-        <div class="wine-card-name">${escHtml(w.name)}</div>
-        <div class="wine-card-meta">${escHtml(w.meta)}</div>
-        <div class="wine-card-note">${escHtml(w.note)}</div>
-      </div>
-      <div class="wine-card-price">$${w.price}</div>
-    </a>`).join('')}</div>`;
+  return '<div class="wine-cards">' + wines.map(w => {
+    const meta = [w.varietal, w.region, w.style].filter(Boolean).join(' · ');
+    const priceDisplay = w.price ? '$' + w.price : (w.priceRange || '');
+    const href = w.url && w.url !== '#' ? escHtml(w.url) : null;
+    const open = href ? '<a class="wine-card" href="' + href + '" target="_blank" rel="noopener">' : '<div class="wine-card">';
+    const close = href ? '</a>' : '</div>';
+    return open +
+      '<div class="wine-card-swatch" style="background:' + escHtml(w.color || '#F5EAE8') + '">' + (w.icon || '🍷') + '</div>' +
+      '<div class="wine-card-body">' +
+        '<div class="wine-card-name">' + escHtml(w.name) + '</div>' +
+        (meta ? '<div class="wine-card-meta">' + escHtml(meta) + '</div>' : '') +
+        (w.why ? '<div class="wine-card-note">' + escHtml(w.why) + '</div>' : '') +
+      '</div>' +
+      (priceDisplay ? '<div class="wine-card-price">' + escHtml(priceDisplay) + '</div>' : '') +
+    close;
+  }).join('') + '</div>';
 }
 
 function showTyping() {
