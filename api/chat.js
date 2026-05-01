@@ -5,36 +5,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages, system, shopUrl, shopName } = req.body;
-  if (!messages || !system) return res.status(400).json({ error: 'Missing messages or system prompt' });
+  const { messages, shopUrl, shopName, budget, tastes } = req.body;
+  if (!messages) return res.status(400).json({ error: 'Missing messages' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key not configured on server' });
+  if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
+  const basePrompt = process.env.SYSTEM_PROMPT;
+  if (!basePrompt) return res.status(500).json({ error: 'System prompt not configured' });
+
+  // Build dynamic user profile section
   const hasShop = shopUrl && shopUrl.length > 0;
+  const hasTastes = tastes && tastes.length > 0;
 
-  // One system prompt, one API call, web search handles the rest
-  const enrichedSystem = system + '\n\n' +
-    (hasShop
-      ? 'The user shops at ' + shopName + ' (' + shopUrl + '). ' +
-        'When recommending wines, use your web_search tool to search for each wine at ' + shopName + '. ' +
-        'For example search: "Penfolds Bin 28 Shiraz ' + shopName + '" to find the real product page URL. ' +
-        'Only include a URL in your response if you actually found it via search — never guess URLs.'
-      : 'No shop set — recommend wines from your knowledge without shop links.') +
-    '\n\nRespond with raw JSON only (no markdown, no code fences):\n' +
-    '{"text":"warm 1-2 sentence intro","wines":[' +
-    '{"name":"Full wine name",' +
-    '"varietal":"e.g. Shiraz",' +
-    '"region":"e.g. Barossa Valley",' +
-    '"style":"e.g. Full Bodied, Dry",' +
-    '"price":28,' +
-    '"priceRange":"$25-30",' +
-    '"why":"2-3 sentences on why this wine works for this specific request — flavour profile, food match, occasion fit",' +
-    '"url":"real product URL found via search, omit field if not found",' +
-    '"icon":"🍷",' +
-    '"color":"#F5EAE8"}]}\n' +
-    'Colors: reds #F5EAE8, whites #EAF0F5, sparkling #F5F0EA, natural #EDF5EA.\n' +
-    'Return 2-3 wines. Always include "why". If casual chat return wines:[].';
+  const userProfile = [
+    '---',
+    'USER PROFILE:',
+    hasTastes ? 'Taste preferences: ' + tastes.join(', ') : null,
+    budget ? 'Usual budget: up to $' + budget + ' per bottle' : null,
+    hasShop ? 'Preferred shop: ' + shopName + ' (' + shopUrl + ')' : null,
+    !hasShop ? 'No shop set — use Australian retailers and search for real product links.' : null,
+    '---',
+    'RESPONSE FORMAT: Return raw JSON only, no markdown, no code fences:',
+    '{"text":"your intro message","wines":[{"name":"Wine Name","price":35,"priceRange":"$30-40","region":"Region","varietal":"Variety","description":"One sentence tasting note","why":"One sentence why it works","url":"real product URL or null","icon":"🍷","color":"#F5EAE8"}]}',
+    'Colors: reds #F5EAE8, whites #EAF0F5, sparkling #F5F0EA, natural/orange #EDF5EA.',
+    'If casual chat with no recommendation needed, return wines as [].',
+    'Never invent URLs — only include a url if found via web search.'
+  ].filter(Boolean).join('\n');
+
+  const fullSystem = basePrompt + '\n\n' + userProfile;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -46,9 +45,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: enrichedSystem,
+        system: fullSystem,
         messages
       })
     });
@@ -56,16 +55,13 @@ export default async function handler(req, res) {
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'API error' });
 
-    // Extract the final text response from the content blocks
+    // Extract final text from content blocks (skip tool use blocks)
     const text = data.content
       ?.filter(b => b.type === 'text')
       .map(b => b.text)
       .join('') || '{}';
 
-    // Return in the same shape the frontend expects
-    return res.status(200).json({
-      content: [{ type: 'text', text }]
-    });
+    return res.status(200).json({ content: [{ type: 'text', text }] });
 
   } catch (err) {
     return res.status(500).json({ error: 'Server error: ' + err.message });

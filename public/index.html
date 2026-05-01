@@ -104,15 +104,18 @@
   .msg.user .msg-bubble { background: var(--wine); color: var(--white); border-top-right-radius: 2px; }
 
   .wine-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
-  .wine-card { background: var(--cream); border: 1px solid var(--border-mid); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .wine-card-top { display: flex; align-items: flex-start; gap: 12px; }
-  .wine-card-swatch { width: 36px; height: 36px; border-radius: var(--radius); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .wine-card { background: var(--cream); border: 1px solid var(--border-mid); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 0; }
+  .wine-card-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .wine-card-swatch { width: 32px; height: 32px; border-radius: var(--radius); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 2px; }
   .wine-card-body { flex: 1; min-width: 0; }
-  .wine-card-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+  .wine-card-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+  .wine-card-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .wine-card-price { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--wine); flex-shrink: 0; }
   .wine-card-meta { font-size: 12px; color: var(--ink-light); }
-  .wine-card-price { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--wine); flex-shrink: 0; }
-  .wine-card-why { font-size: 12px; color: var(--ink-mid); line-height: 1.55; padding-top: 8px; border-top: 1px solid var(--border); font-style: italic; }
-  .wine-card-link { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--wine); text-decoration: none; font-weight: 500; }
+  .wine-card-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.5; padding: 10px 0; border-top: 1px solid var(--border); margin-top: 10px; }
+  .wine-card-why { font-size: 13px; color: var(--ink-mid); line-height: 1.5; padding: 8px 0; border-top: 1px solid var(--border); }
+  .wine-card-why strong { color: var(--ink); font-weight: 500; font-style: normal; }
+  .wine-card-link { display: inline-block; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--wine); text-decoration: none; font-weight: 500; width: 100%; }
   .wine-card-link:hover { text-decoration: underline; }
 
   .typing-dots { display: flex; gap: 5px; padding: 6px 4px; }
@@ -363,30 +366,17 @@ function addWelcomeMessage() {
   appendMessage('ai', '<p>' + tasteStr + ' &mdash; browsing <strong>' + escHtml(state.shopName) + '</strong>, budget around <strong>$' + state.budget + '</strong>.</p><p style="margin-top:10px">Tell me what\'s on tonight &mdash; a dish, a mood, an occasion, or ask me to surprise you.</p>');
 }
 
-function buildSystemPrompt() {
-  const tasteLabels = { 'bold-reds': 'bold full-bodied reds', 'elegant-reds': 'elegant lighter reds', 'crisp-whites': 'crisp dry whites', 'rich-whites': 'rich oaky whites', 'bubbles': 'sparkling wines', 'natural': 'natural and orange wines' };
-  const profile = state.tastes.map(t => tasteLabels[t] || t).join(', ') || 'open to anything';
-  const hasShop = state.shopUrl && state.shopUrl.length > 0;
-  return 'You are Vino, a warm and knowledgeable AI wine concierge.\n\n' +
-    'User taste profile: ' + profile + '\n' +
-    'Usual budget: up to $' + state.budget + ' per bottle\n' +
-    (hasShop ? 'Preferred shop: ' + state.shopName + ' (' + state.shopUrl + ')\n' : 'No shop set.\n') + '\n' +
-    'Always respond with raw JSON only (no markdown, no code fences):\n' +
-    '{"text":"intro","wines":[{"name":"...","varietal":"...","region":"...","style":"...","price":35,"priceRange":"$30-40","why":"2-3 sentences on why this wine works for this specific request, mention flavour, food match, and occasion","url":"direct URL if known","icon":"emoji","color":"#F5EAE8"}]}\n' +
-    'Colors: reds #F5EAE8, whites #EAF0F5, sparkling #F5F0EA, natural #EDF5EA.\n' +
-    'Always include "why" for every wine. If casual chat, return wines:[].';
-}
-
 async function callProxy(userMessage) {
   state.conversationHistory.push({ role: 'user', content: userMessage });
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      system: buildSystemPrompt(),
       messages: state.conversationHistory,
       shopUrl: state.shopUrl,
-      shopName: state.shopName
+      shopName: state.shopName,
+      budget: state.budget,
+      tastes: state.tastes
     })
   });
   if (!response.ok) {
@@ -442,12 +432,15 @@ function buildWineCards(wines) {
       '<div class="wine-card-top">' +
         '<div class="wine-card-swatch" style="background:' + escHtml(w.color || '#F5EAE8') + '">' + (w.icon || '\ud83c\udf77') + '</div>' +
         '<div class="wine-card-body">' +
-          '<div class="wine-card-name">' + escHtml(w.name) + '</div>' +
+          '<div class="wine-card-header">' +
+            '<div class="wine-card-name">' + escHtml(w.name) + '</div>' +
+            (priceDisplay ? '<div class="wine-card-price">' + escHtml(priceDisplay) + '</div>' : '') +
+          '</div>' +
           (meta ? '<div class="wine-card-meta">' + escHtml(meta) + '</div>' : '') +
         '</div>' +
-        (priceDisplay ? '<div class="wine-card-price">' + escHtml(priceDisplay) + '</div>' : '') +
       '</div>' +
-      (w.why ? '<div class="wine-card-why">' + escHtml(w.why) + '</div>' : '') +
+      (w.description ? '<div class="wine-card-desc">' + escHtml(w.description) + '</div>' : '') +
+      (w.why ? '<div class="wine-card-why"><strong>Why it works:</strong> ' + escHtml(w.why) + '</div>' : '') +
       (href ? '<a class="wine-card-link" href="' + escHtml(href) + '" target="_blank" rel="noopener">View at ' + escHtml(state.shopName) + ' \u2192</a>' : '') +
     '</div>';
   }).join('') + '</div>';
